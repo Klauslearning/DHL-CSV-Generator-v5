@@ -6,9 +6,12 @@ import csv
 
 def format_commodity_code(code):
     digits = ''.join(filter(str.isdigit, str(code)))
-    if len(digits) == 8:
-        return f"{digits[:4]}.{digits[4:6]}.{digits[6:]}"
-    return str(code)
+    if len(digits) < 4:
+        return digits
+    result = digits[:4]
+    for i in range(4, len(digits), 2):
+        result += '.' + digits[i:i+2]
+    return result
 
 SKU_DB = "sku_reference_data.csv"
 
