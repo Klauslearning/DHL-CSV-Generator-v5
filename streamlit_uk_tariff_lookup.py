@@ -2,11 +2,12 @@ import streamlit as st
 import requests
 import pandas as pd
 
-st.set_page_config(page_title="UK Tariff Code Lookup V2", layout="centered")
-st.title("UK Tariff Code Lookup Tool (V2)")
-st.write("Enter a product description in English to search for the most relevant UK tariff (commodity) codes. You can select results and export them to CSV.")
+st.set_page_config(page_title="UK Tariff Code Fuzzy Search", layout="centered")
+st.title("UK Tariff Code Fuzzy Search")
 
-def fetch_tariff_codes(query):
+st.write("Enter a product description in English (e.g. 'men's leather shoes', 'plastic bag', 'cotton shirt'). All similar commodity codes will be listed below.")
+
+def fuzzy_search_tariff(query):
     url = f"https://www.trade-tariff.service.gov.uk/api/v2/search?q={query}"
     headers = {"User-Agent": "dhl-tariff-app/1.0 (contact@example.com)"}
     resp = requests.get(url, headers=headers)
@@ -14,39 +15,33 @@ def fetch_tariff_codes(query):
         data = resp.json()
     except Exception:
         return []
+    results = []
     if isinstance(data, dict) and isinstance(data.get('data', None), list):
-        results = []
         for item in data['data']:
-            if isinstance(item, dict) and item.get('type') == 'commodity':
-                code = item.get('id', '')
-                desc = item.get('attributes', {}).get('description', '')
-                link = f"https://www.trade-tariff.service.gov.uk/commodities/{code}"
+            code = item.get('id', '')
+            desc = item.get('attributes', {}).get('description', '')
+            type_ = item.get('type', '')
+            if code and desc and type_ == 'commodity':
                 results.append({
                     'Commodity Code': code,
                     'Description': desc,
-                    'Official Link': link
+                    'Official Link': f"https://www.trade-tariff.service.gov.uk/commodities/{code}"
                 })
-        return results
-    else:
-        return []
+    return results
 
 query = st.text_input("Product Description", "")
 
 if st.button("Search") and query.strip():
-    with st.spinner("Searching UK Tariff Codes..."):
-        try:
-            results = fetch_tariff_codes(query.strip())
-        except Exception as e:
-            st.error(f"Error fetching data: {e}")
-            results = []
+    with st.spinner("Searching..."):
+        results = fuzzy_search_tariff(query.strip())
     if not results:
         st.warning("No results found. Please try a different description.")
     else:
         df = pd.DataFrame(results)
-        st.write("### Search Results")
+        st.write("### Similar Commodity Codes")
         st.dataframe(df, use_container_width=True)
         selected = st.multiselect(
-            "Select one or more codes to export:",
+            "Select codes to export:",
             options=df.index,
             format_func=lambda i: f"{df.iloc[i]['Commodity Code']} - {df.iloc[i]['Description']}"
         )
