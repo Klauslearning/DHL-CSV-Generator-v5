@@ -21,10 +21,11 @@ def fuzzy_search_tariff(query):
             code = item.get('id', '')
             desc = item.get('attributes', {}).get('description', '')
             type_ = item.get('type', '')
-            if code and desc and type_ == 'commodity':
+            if code and desc:
                 results.append({
-                    'Commodity Code': code,
+                    'Code': code,
                     'Description': desc,
+                    'Type': type_,
                     'Official Link': f"https://www.trade-tariff.service.gov.uk/commodities/{code}"
                 })
     return results
@@ -43,7 +44,7 @@ if st.button("Search") and query.strip():
         selected = st.multiselect(
             "Select codes to export:",
             options=df.index,
-            format_func=lambda i: f"{df.iloc[i]['Commodity Code']} - {df.iloc[i]['Description']}"
+            format_func=lambda i: f"{df.iloc[i]['Code']} - {df.iloc[i]['Description']}"
         )
         if selected:
             export_df = df.iloc[selected]
