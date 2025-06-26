@@ -7,36 +7,28 @@ st.title("UK Tariff Code Lookup Tool (V2)")
 st.write("Enter a product description in English to search for the most relevant UK tariff (commodity) codes. You can select results and export them to CSV.")
 
 def fetch_tariff_codes(query):
-    # Try /search_references first
-    url1 = f"https://www.trade-tariff.service.gov.uk/api/v2/search_references?query={query}"
-    resp1 = requests.get(url1)
-    if resp1.status_code == 200:
-        data1 = resp1.json().get('data', [])
-        if data1:
-            return [
-                {
-                    'Commodity Code': item.get('attributes', {}).get('reference', ''),
-                    'Description': item.get('attributes', {}).get('title', ''),
-                    'Type': item.get('type', ''),
-                    'Official Link': f"https://www.trade-tariff.service.gov.uk/commodities/{item.get('attributes', {}).get('reference', '')}"
-                }
-                for item in data1 if item.get('attributes', {}).get('reference', '')
-            ]
-    # Fallback to /search
-    url2 = f"https://www.trade-tariff.service.gov.uk/api/v2/search?q={query}"
-    resp2 = requests.get(url2)
-    if resp2.status_code == 200:
-        data2 = resp2.json().get('data', [])
-        return [
-            {
-                'Commodity Code': item.get('id', ''),
-                'Description': item.get('attributes', {}).get('description', ''),
-                'Type': item.get('type', ''),
-                'Official Link': f"https://www.trade-tariff.service.gov.uk/commodities/{item.get('id', '')}"
-            }
-            for item in data2 if item.get('id', '')
-        ]
-    return []
+    url = f"https://www.trade-tariff.service.gov.uk/api/v2/search?q={query}"
+    headers = {"User-Agent": "dhl-tariff-app/1.0 (contact@example.com)"}
+    resp = requests.get(url, headers=headers)
+    try:
+        data = resp.json()
+    except Exception:
+        return []
+    if isinstance(data, dict) and isinstance(data.get('data', None), list):
+        results = []
+        for item in data['data']:
+            if isinstance(item, dict) and item.get('type') == 'commodity':
+                code = item.get('id', '')
+                desc = item.get('attributes', {}).get('description', '')
+                link = f"https://www.trade-tariff.service.gov.uk/commodities/{code}"
+                results.append({
+                    'Commodity Code': code,
+                    'Description': desc,
+                    'Official Link': link
+                })
+        return results
+    else:
+        return []
 
 query = st.text_input("Product Description", "")
 
