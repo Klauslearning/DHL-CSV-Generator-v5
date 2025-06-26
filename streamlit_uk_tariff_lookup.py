@@ -9,23 +9,22 @@ st.write("Enter a product description in English to search for the most relevant
 
 @st.cache_data(show_spinner=False)
 def search_tariff_code(query):
-    url = f"https://www.trade-tariff.service.gov.uk/api/v2/commodities/search?q={query}"
+    url = f"https://www.trade-tariff.service.gov.uk/api/v2/search_references?query={query}"
     response = requests.get(url)
     if response.status_code != 200:
         return []
     data = response.json()
-    return data.get('data', [])
+    results = []
+    for item in data.get('data', []):
+        attrs = item.get('attributes', {})
+        code = attrs.get('reference', '')
+        desc = attrs.get('title', '')
+        if code and desc:
+            results.append({'Commodity Code': code, 'Description': desc})
+    return results
 
 def results_to_df(results):
-    rows = []
-    for item in results:
-        code = item['id']
-        desc = item['attributes'].get('description', '')
-        rows.append({
-            'Commodity Code': code,
-            'Description': desc
-        })
-    return pd.DataFrame(rows)
+    return pd.DataFrame(results)
 
 query = st.text_input("Product Description", "")
 
