@@ -66,4 +66,4 @@ if st.button("Search") and query.strip():
                 data=csv,
                 file_name="selected_uk_tariff_codes.csv",
                 mime="text/csv"
-            )
+            ) 
